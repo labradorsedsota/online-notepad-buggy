@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在线记事本</title>
+<style>
+/* ========== CSS Variables ========== */
+:root {
+  --bg: #FAFAFA;
+  --card-bg: #FFFFFF;
+  --text: #1D1D1F;
+  --text-secondary: #86868B;
+  --primary: #0071E3;
+  --primary-hover: #0062CC;
+  --primary-light: rgba(0,113,227,0.08);
+  --danger: #FF3B30;
+  --danger-hover: #E0342A;
+  --danger-light: rgba(255,59,48,0.08);
+  --success: #34C759;
+  --warning: #FF9500;
+  --border: #E5E5EA;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --font-default: -apple-system, "Helvetica Neue", "PingFang SC", sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Courier New", monospace;
+  --font-serif: "Georgia", "Noto Serif SC", "Times New Roman", serif;
+  --font-sans: "Inter", "Helvetica Neue", "PingFang SC", sans-serif;
+  --font-body: var(--font-default);
+  --switch-bg: #E5E5EA;
+  --tooltip-bg: #1D1D1F;
+  --tooltip-text: #FFFFFF;
+  --overlay: rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] {
+  --bg: #1C1C1E;
+  --card-bg: #2C2C2E;
+  --text: #F5F5F7;
+  --text-secondary: #98989D;
+  --primary: #0A84FF;
+  --primary-hover: #409CFF;
+  --primary-light: rgba(10,132,255,0.12);
+  --danger: #FF453A;
+  --danger-hover: #FF6961;
+  --danger-light: rgba(255,69,58,0.12);
+  --success: #30D158;
+  --warning: #FF9F0A;
+  --border: #38383A;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --switch-bg: #48484A;
+  --tooltip-bg: #F5F5F7;
+  --tooltip-text: #1C1C1E;
+  --overlay: rgba(0,0,0,0.6);
+}
+
+/* ========== Reset & Base ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-default);
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ========== Layout ========== */
+.container {
+  width: 100%;
+  max-width: 800px;
+  padding: 24px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* ========== Toolbar ========== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+/* ========== Switch (F-06) ========== */
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.switch input { display: none; }
+
+.switch-track {
+  position: absolute;
+  inset: 0;
+  background: var(--switch-bg);
+  border-radius: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--primary);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.switch input:checked ~ .switch-thumb {
+  transform: translateX(20px);
+}
+
+/* ========== Select (F-07) ========== */
+.font-select {
+  font-family: var(--font-default);
+  font-size: 13px;
+  padding: 4px 24px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2386868B'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.2s ease, background-color 0.3s ease;
+}
+
+.font-select:focus {
+  border-color: var(--primary);
+}
+
+/* ========== Alert (F-10) ========== */
+.alert-bar {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+  margin: 0;
+}
+
+.alert-bar.visible {
+  max-height: 60px;
+  opacity: 1;
+  margin-bottom: 0;
+}
+
+.alert-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  border-left: 3px solid var(--warning);
+  background: rgba(255,149,0,0.08);
+  color: var(--text);
+}
+
+[data-theme="dark"] .alert-bar-inner {
+  background: rgba(255,159,10,0.12);
+}
+
+.alert-bar-icon { font-size: 16px; flex-shrink: 0; }
+
+/* ========== Title Input (F-01) ========== */
+.title-input {
+  font-family: var(--font-default);
+  font-size: 24px;
+  font-weight: 600;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease;
+  max-width: 100%;
+}
+
+.title-input::placeholder { color: var(--text-secondary); }
+.title-input:focus { border-bottom-color: var(--primary); }
+
+/* ========== Card + Textarea (F-02) ========== */
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.content-textarea {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.8;
+  width: 100%;
+  min-height: 300px;
+  border: none;
+  padding: 16px;
+  background: transparent;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  overflow: hidden;
+}
+
+.content-textarea::placeholder { color: var(--text-secondary); }
+
+/* ========== Buttons (F-03, F-04, F-05) ========== */
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: var(--font-default);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  border: none;
+  outline: none;
+  user-select: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+.btn-primary:hover { background: var(--primary-hover); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.btn-outline:hover {
+  background: var(--primary-light);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger:hover {
+  background: var(--danger-light);
+}
+
+/* ========== Tooltip (F-08) ========== */
+.tooltip-wrapper {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 100;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--tooltip-bg);
+}
+
+.tooltip-wrapper:hover .tooltip,
+.tooltip-wrapper .tooltip.show {
+  opacity: 1;
+}
+
+/* ========== Footer Links (F-09) ========== */
+.footer {
+  text-align: center;
+  padding: 16px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer a:hover { color: var(--primary); }
+
+/* ========== Message Toast (F-03, F-04) ========== */
+.message-container {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  pointer-events: none;
+}
+
+.message-toast {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-default);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: msgSlideIn 0.3s ease forwards;
+  pointer-events: auto;
+}
+
+.message-toast.success { background: var(--success); }
+.message-toast.warning { background: var(--warning); }
+.message-toast.error { background: var(--danger); }
+.message-toast.info { background: var(--primary); }
+
+.message-toast.fade-out {
+  animation: msgSlideOut 0.3s ease forwards;
+}
+
+@keyframes msgSlideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes msgSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* ========== Dialog / Modal (F-04, F-09) ========== */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.dialog-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dialog {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  transform: scale(0.95);
+  transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.dialog-overlay.open .dialog {
+  transform: scale(1);
+}
+
+.dialog-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.dialog-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ========== Radio (F-04) ========== */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.radio-item input[type="radio"] { display: none; }
+
+.radio-circle {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.radio-circle::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.radio-item input[type="radio"]:checked + .radio-circle {
+  border-color: var(--primary);
+}
+
+.radio-item input[type="radio"]:checked + .radio-circle::after {
+  transform: scale(1);
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 600px) {
+  .container { padding: 16px 12px 32px; }
+  .title-input { font-size: 20px; }
+  .content-textarea { min-height: 200px; font-size: 15px; }
+  .actions { gap: 8px; }
+  .btn { padding: 8px 14px; font-size: 13px; }
+  .toolbar { gap: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Toolbar: Dark mode + Font select -->
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <span class="toolbar-label">字体</span>
+      <select class="font-select" id="fontSelect" aria-label="选择字体">
+        <option value="default">默认</option>
+        <option value="mono">等宽</option>
+        <option value="serif">衬线</option>
+        <option value="sans">无衬线</option>
+      </select>
+    </div>
+    <div class="toolbar-group">
+      <span class="toolbar-label">暗色</span>
+      <label class="switch" aria-label="切换暗色模式">
+        <input type="checkbox" id="darkToggle">
+        <span class="switch-track"></span>
+        <span class="switch-thumb"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Alert: Unsaved changes -->
+  <div class="alert-bar" id="unsavedAlert">
+    <div class="alert-bar-inner">
+      <span class="alert-bar-icon">⚠️</span>
+      <span>您有未保存的更改</span>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <input class="title-input" id="titleInput" type="text" placeholder="输入笔记标题…" maxlength="100" aria-label="笔记标题">
+
+  <!-- Content Card -->
+  <div class="card">
+    <textarea class="content-textarea" id="contentArea" placeholder="开始记录…" aria-label="笔记内容"></textarea>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="actions">
+    <div class="tooltip-wrapper">
+      <button class="btn btn-primary" id="btnSave" aria-label="保存笔记">💾 保存</button>
+      <span class="tooltip">保存笔记到浏览器</span>
+    </div>
+    <div class="tooltip-wrapper">
+      <button class="btn btn-outline" id="btnExport" aria-label="导出笔记">📤 导出</button>
+      <span class="tooltip">导出为文件</span>
+    </div>
+    <div class="tooltip-wrapper">
+      <button class="btn btn-danger" id="btnClear" aria-label="清空笔记">🗑 清空</button>
+      <span class="tooltip">清空所有内容</span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="flex:1"></div>
+  <div class="footer">
+    <a href="javascript:void(0)" id="linkAbout">关于</a>
+    <span>|</span>
+    <a href="javascript:void(0)" id="linkHelp">帮助</a>
+  </div>
+</div>
+
+<!-- Message Container -->
+<div class="message-container" id="messageContainer"></div>
+
+<!-- Export Dialog -->
+<div class="dialog-overlay" id="exportDialog">
+  <div class="dialog">
+    <div class="dialog-title">导出笔记</div>
+    <div class="dialog-body">
+      <p style="margin-bottom:8px;">选择导出格式：</p>
+      <div class="radio-group" id="exportFormat">
+        <label class="radio-item">
+          <input type="radio" name="format" value="txt" checked>
+          <span class="radio-circle"></span>
+          TXT — 纯文本
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="format" value="md">
+          <span class="radio-circle"></span>
+          Markdown
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="format" value="html">
+          <span class="radio-circle"></span>
+          HTML
+        </label>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-outline" id="exportCancel">取消</button>
+      <button class="btn btn-primary" id="exportConfirm">确认导出</button>
+    </div>
+  </div>
+</div>
+
+<!-- About Dialog -->
+<div class="dialog-overlay" id="aboutDialog">
+  <div class="dialog">
+    <div class="dialog-title">关于</div>
+    <div class="dialog-body">
+      <p><strong>在线记事本</strong> v1.0</p>
+      <p style="margin-top:8px;color:var(--text-secondary)">一个打开即用的浏览器端记事工具。无需注册，无需后端，笔记保存在浏览器本地。</p>
+      <p style="margin-top:8px;color:var(--text-secondary)">支持 TXT / Markdown / HTML 三种格式导出。</p>
+      <p style="margin-top:12px"><a href="https://github.com/labradorsedsota/online-notepad" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;">GitHub →</a></p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-primary" id="aboutClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Dialog -->
+<div class="dialog-overlay" id="helpDialog">
+  <div class="dialog">
+    <div class="dialog-title">使用帮助</div>
+    <div class="dialog-body" style="line-height:1.8">
+      <p>📝 <strong>记录</strong> — 输入标题和内容即可开始记录</p>
+      <p>💾 <strong>保存</strong> — 点击保存按钮，笔记存储在浏览器中，刷新不丢失</p>
+      <p>📤 <strong>导出</strong> — 支持导出为 TXT、Markdown、HTML 文件</p>
+      <p>🗑 <strong>清空</strong> — 清除所有内容，重新开始</p>
+      <p>🌙 <strong>暗色模式</strong> — 右上角开关切换亮/暗主题</p>
+      <p>🔤 <strong>字体</strong> — 右上角下拉菜单切换编辑字体</p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-primary" id="helpClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== Constants ==========
+const PREFIX = 'vla-ntp-';
+const KEY_TITLE = PREFIX + 'title';
+const KEY_CONTENT = PREFIX + 'content';
+const KEY_THEME = PREFIX + 'theme';
+const KEY_FONT = PREFIX + 'font';
+
+// ========== DOM ==========
+const titleInput = document.getElementById('titleInput');
+const contentArea = document.getElementById('contentArea');
+const darkToggle = document.getElementById('darkToggle');
+const fontSelect = document.getElementById('fontSelect');
+const unsavedAlert = document.getElementById('unsavedAlert');
+const btnSave = document.getElementById('btnSave');
+const btnExport = document.getElementById('btnExport');
+const btnClear = document.getElementById('btnClear');
+const messageContainer = document.getElementById('messageContainer');
+const exportDialog = document.getElementById('exportDialog');
+const aboutDialog = document.getElementById('aboutDialog');
+const helpDialog = document.getElementById('helpDialog');
+
+// ========== State ==========
+let savedTitle = '';
+let savedContent = '';
+
+// ========== Utilities ==========
+function showMessage(text, type) {
+  const el = document.createElement('div');
+  el.className = 'message-toast ' + type;
+  el.textContent = text;
+  messageContainer.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('fade-out');
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+function sanitizeFilename(name) {
+  if (!name || !name.trim()) return '未命名笔记';
+  return name.replace(/[\/\\:*?"<>|]/g, '_').trim() || '未命名笔记';
+}
+
+function downloadFile(filename, content, mimeType) {
+  try {
+    const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showMessage('导出成功', 'success');
+  } catch (e) {
+    showMessage('导出失败，请重试', 'error');
+  }
+}
+
+function openDialog(dialog) {
+  dialog.classList.add('open');
+}
+
+function closeDialog(dialog) {
+  dialog.classList.remove('open');
+}
+
+function checkUnsaved() {
+  const titleChanged = titleInput.value !== savedTitle;
+  const contentChanged = contentArea.value !== savedContent;
+  if (titleChanged || contentChanged) {
+    unsavedAlert.classList.add('visible');
+  } else {
+    unsavedAlert.classList.remove('visible');
+  }
+}
+
+function autoResize() {
+  contentArea.style.height = 'auto';
+  const minH = 300;
+  contentArea.style.height = Math.max(minH, contentArea.scrollHeight) + 'px';
+}
+
+function setFont(key) {
+  const map = {
+    default: 'var(--font-default)',
+    mono: 'var(--font-mono)',
+    serif: 'var(--font-serif)',
+    sans: 'var(--font-sans)'
+  };
+  document.documentElement.style.setProperty('--font-body', map[key] || map.default);
+}
+
+function storageAvailable() {
+  try {
+    const t = '__storage_test__';
+    localStorage.setItem(t, t);
+    localStorage.removeItem(t);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// ========== Init ==========
+(function init() {
+  // Check localStorage
+  if (!storageAvailable()) {
+    unsavedAlert.classList.add('visible');
+    document.querySelector('#unsavedAlert .alert-bar-inner span:last-child').textContent = '当前浏览器不支持本地存储，笔记将无法保存';
+    unsavedAlert.querySelector('.alert-bar-inner').style.borderLeftColor = 'var(--danger)';
+    unsavedAlert.querySelector('.alert-bar-inner').style.background = 'rgba(255,59,48,0.08)';
+    return;
+  }
+
+  // Restore theme
+  const savedTheme = localStorage.getItem(KEY_THEME);
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    darkToggle.checked = true;
+  }
+
+  // Restore font
+  const savedFont = localStorage.getItem(KEY_FONT);
+  if (savedFont) {
+    fontSelect.value = savedFont;
+    setFont(savedFont);
+  }
+
+  // Restore content
+  savedTitle = localStorage.getItem(KEY_TITLE) || '';
+  savedContent = localStorage.getItem(KEY_CONTENT) || '';
+  titleInput.value = savedTitle;
+  contentArea.value = savedContent;
+
+  autoResize();
+})();
+
+// ========== Theme Toggle (F-06) ==========
+darkToggle.addEventListener('change', function() {
+  if (this.checked) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem(KEY_THEME, 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem(KEY_THEME, 'light');
+  }
+});
+
+// ========== Font Select (F-07) ==========
+fontSelect.addEventListener('change', function() {
+  setFont(this.value);
+  localStorage.setItem(KEY_FONT, this.value);
+});
+
+// ========== Content Change Tracking ==========
+titleInput.addEventListener('input', checkUnsaved);
+contentArea.addEventListener('input', function() {
+  checkUnsaved();
+  autoResize();
+});
+
+// ========== Save (F-03) ==========
+btnSave.addEventListener('click', function() {
+  const title = titleInput.value;
+  const content = contentArea.value;
+
+  if (!title.trim() && !content.trim()) {
+    showMessage('内容为空，无法保存', 'warning');
+    return;
+  }
+
+  try {
+    localStorage.setItem(KEY_TITLE, title);
+    localStorage.setItem(KEY_CONTENT, content);
+    savedTitle = title;
+    savedContent = content;
+    checkUnsaved();
+    showMessage('保存成功', 'success');
+  } catch (e) {
+    showMessage('存储空间已满，请导出后清空', 'error');
+  }
+});
+
+// ========== Export (F-04) ==========
+btnExport.addEventListener('click', function() {
+  const title = titleInput.value;
+  const content = contentArea.value;
+
+  if (!title.trim() && !content.trim()) {
+    showMessage('内容为空，无法导出', 'warning');
+    return;
+  }
+
+  // Reset to TXT
+  document.querySelector('#exportFormat input[value="txt"]').checked = true;
+  openDialog(exportDialog);
+});
+
+exportCancel.addEventListener('click', function() {
+  closeDialog(exportDialog);
+});
+
+exportDialog.addEventListener('click', function(e) {
+  if (e.target === exportDialog) closeDialog(exportDialog);
+});
+
+exportConfirm.addEventListener('click', function() {
+  const format = document.querySelector('#exportFormat input[name="format"]:checked').value;
+  const title = titleInput.value;
+  const content = contentArea.value;
+  const filename = sanitizeFilename(title);
+
+  if (format === 'txt') {
+    const text = (title.trim() ? title + '\n\n' : '') + content;
+    downloadFile(filename + '.txt', text, 'text/plain');
+  } else if (format === 'md') {
+    const md = (title.trim() ? '# ' + title + '\n\n' : '') + content;
+    downloadFile(filename + '.md', md, 'text/markdown');
+  } else if (format === 'html') {
+    const paragraphs = content.split('\n').map(function(line) {
+      return '<p>' + line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>';
+    }).join('\n    ');
+    const html = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n  <meta charset="UTF-8">\n  <title>' +
+      (title.trim() ? title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '未命名笔记') +
+      '</title>\n</head>\n<body>\n  ' +
+      (title.trim() ? '<h1>' + title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</h1>\n    ' : '') +
+      paragraphs +
+      '\n</body>\n</html>';
+    downloadFile(filename + '.html', html, 'text/html');
+  }
+
+  closeDialog(exportDialog);
+});
+
+// ========== Clear (F-05) ==========
+btnClear.addEventListener('click', function() {
+  const title = titleInput.value;
+  const content = contentArea.value;
+
+  if (!title.trim() && !content.trim()) {
+    showMessage('已经是空白状态', 'info');
+    return;
+  }
+
+  if (confirm('确定要清空所有内容吗？此操作不可撤销')) {
+    titleInput.value = '';
+    contentArea.value = '';
+    savedTitle = '';
+    savedContent = '';
+    localStorage.removeItem(KEY_TITLE);
+    localStorage.removeItem(KEY_CONTENT);
+    checkUnsaved();
+    autoResize();
+    showMessage('已清空', 'success');
+  }
+});
+
+// ========== About Dialog (F-09) ==========
+document.getElementById('linkAbout').addEventListener('click', function() {
+  openDialog(aboutDialog);
+});
+document.getElementById('aboutClose').addEventListener('click', function() {
+  closeDialog(aboutDialog);
+});
+aboutDialog.addEventListener('click', function(e) {
+  if (e.target === aboutDialog) closeDialog(aboutDialog);
+});
+
+// ========== Help Dialog (F-09) ==========
+document.getElementById('linkHelp').addEventListener('click', function() {
+  openDialog(helpDialog);
+});
+document.getElementById('helpClose').addEventListener('click', function() {
+  closeDialog(helpDialog);
+});
+helpDialog.addEventListener('click', function(e) {
+  if (e.target === helpDialog) closeDialog(helpDialog);
+});
+
+// ========== Tooltip hover delay (F-08) ==========
+document.querySelectorAll('.tooltip-wrapper').forEach(function(wrapper) {
+  let timer = null;
+  const tip = wrapper.querySelector('.tooltip');
+  wrapper.addEventListener('mouseenter', function() {
+    timer = setTimeout(function() { tip.classList.add('show'); }, 300);
+  });
+  wrapper.addEventListener('mouseleave', function() {
+    clearTimeout(timer);
+    tip.classList.remove('show');
+  });
+});
+</script>
+
+</body>
+</html>
