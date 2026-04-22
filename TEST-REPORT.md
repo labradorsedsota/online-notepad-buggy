@@ -3,8 +3,8 @@
 | 项 | 值 |
 |---|---|
 | 应用 | 在线记事本 (VLA-NTP) v1.0 |
-| 部署地址 | https://labradorsedsota.github.io/online-notepad/ |
-| GitHub Repo | https://github.com/labradorsedsota/online-notepad |
+| 部署地址 | https://labradorsedsota.github.io/online-notepad-singer/ |
+| GitHub Repo | https://github.com/labradorsedsota/online-notepad-singer |
 | 测试用例文档 | TEST-CASE.md (commit `ed242da`) |
 | 测试日期 | 2026-04-21 |
 | 测试执行人 | Moss (moss_bot) |

@@ -10,7 +10,7 @@
 | 日期 | 2026-04-21 |
 | 状态 | 待 PM 确认 |
 | PRD 版本 | v1.0 (2026-04-13, Pichai) |
-| 被测页面 | https://labradorsedsota.github.io/online-notepad/ |
+| 被测页面 | https://labradorsedsota.github.io/online-notepad-singer/ |
 | 测试工具 | mano-cua（优先） |
 | 执行规范 | mano-cua-execution-spec v1.6 |
 | 设计规范 | test-case-design-spec v1.0 |
@@ -37,7 +37,7 @@
 | 浏览器 | Google Chrome（最新稳定版） |
 | 操作系统 | macOS (arm64) |
 | 测试工具 | mano-cua |
-| 被测 URL | https://labradorsedsota.github.io/online-notepad/ |
+| 被测 URL | https://labradorsedsota.github.io/online-notepad-singer/ |
 | 网络 | 本地网络 → GitHub Pages |
 | localStorage 前缀 | `vla-ntp-` |
 | localStorage Keys | `vla-ntp-title`, `vla-ntp-content`, `vla-ntp-theme`, `vla-ntp-font` |
@@ -46,7 +46,7 @@
 
 ## 4. Fixture 清单
 
-存放路径：`test/fixtures/online-notepad/`
+存放路径：`test/fixtures/online-notepad-singer/`
 
 | 文件名 | 用途 | 内容摘要 |
 |--------|------|---------|
@@ -83,7 +83,7 @@ MOSS 测试笔记 2026
 
 ```bash
 # Step 1: 打开目标页面
-open -a "Google Chrome" "https://labradorsedsota.github.io/online-notepad/"
+open -a "Google Chrome" "https://labradorsedsota.github.io/online-notepad-singer/"
 sleep 3
 
 # Step 2: 窗口最大化
@@ -157,7 +157,7 @@ sleep 2
 ```bash
 osascript -e '
 tell application "Google Chrome"
-    set matchPath to "labradorsedsota.github.io/online-notepad"
+    set matchPath to "labradorsedsota.github.io/online-notepad-singer"
     set closedCount to 0
     repeat with w in windows
         set tabList to tabs of w
