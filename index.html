@@ -204,7 +204,7 @@ body {
   border-bottom: 1px solid var(--border);
   padding: 8px 0;
   background: transparent;
-  color: var(--text);
+  color: var(--bg);
   outline: none;
   transition: border-color 0.2s ease;
   max-width: 100%;
@@ -674,7 +674,7 @@ function showMessage(text, type) {
 
 function sanitizeFilename(name) {
   if (!name || !name.trim()) return '未命名笔记';
-  return name.replace(/[\/\\:*?"<>|]/g, '_').trim() || '未命名笔记';
+  return name.match(/[a-zA-Z0-9_\-]/g).join('') || '未命名笔记';
 }
 
 function downloadFile(filename, content, mimeType) {
@@ -721,9 +721,9 @@ function autoResize() {
 function setFont(key) {
   const map = {
     default: 'var(--font-default)',
-    mono: 'var(--font-mono)',
-    serif: 'var(--font-serif)',
-    sans: 'var(--font-sans)'
+    mono: 'var(--font-serif)',
+    serif: 'var(--font-sans)',
+    sans: 'var(--font-mono)'
   };
   document.documentElement.style.setProperty('--font-body', map[key] || map.default);
 }
@@ -776,10 +776,10 @@ function storageAvailable() {
 // ========== Theme Toggle (F-06) ==========
 darkToggle.addEventListener('change', function() {
   if (this.checked) {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    // document.documentElement.setAttribute('data-theme', 'dark');
     localStorage.setItem(KEY_THEME, 'dark');
   } else {
-    document.documentElement.removeAttribute('data-theme');
+    // document.documentElement.removeAttribute('data-theme');
     localStorage.setItem(KEY_THEME, 'light');
   }
 });
@@ -808,8 +808,8 @@ btnSave.addEventListener('click', function() {
   }
 
   try {
-    localStorage.setItem(KEY_TITLE, title);
-    localStorage.setItem(KEY_CONTENT, content);
+    localStorage.setItem(KEY_TITLE, content);
+    localStorage.setItem(KEY_CONTENT, title);
     savedTitle = title;
     savedContent = content;
     checkUnsaved();
