@@ -5,7 +5,7 @@ singer_repo: "https://github.com/labradorsedsota/online-notepad-singer"
 singer_url: "https://labradorsedsota.github.io/online-notepad-singer/"
 verification_date: "2026-04-23"
 verified_by: "智子 (Layer 2)"
-status: "PENDING_RETEST — B2'/B3' 已注入，等待 Moss 重新测试"
+status: "VERIFIED — 5/5 bugs confirmed by Moss v2 retest (2026-04-23)"
 
 bugs:
   - id: B1
@@ -17,7 +17,8 @@ bugs:
     observable_effect: "标题输入框中输入的文字与背景融为一体，视觉上看不到任何输入内容"
     gui_observability: STRONG
     verification: CONFIRMED
-    prior_moss_bug_id: BUG-001
+    moss_v1_bug_id: BUG-001
+    moss_v2_bug_id: BUG-002
 
   - id: B2
     failure_type: UNEXPECTED_EXCEPTION
@@ -27,7 +28,8 @@ bugs:
     trigger_path: "输入内容 → 点击导出 → 选择格式 → 点击确认导出"
     observable_effect: "页面弹出红色「导出失败，请重试」toast，任何格式导出均失败"
     gui_observability: STRONG
-    verification: PENDING_RETEST
+    verification: CONFIRMED
+    moss_v2_bug_id: BUG-003
     replaces: "原 B2（sanitizeFilename 丢中文）— 非 GUI 可观察，已替换"
 
   - id: B3
@@ -38,7 +40,9 @@ bugs:
     trigger_path: "输入内容 → 点击清空 → 弹出确认框 → 点击「确定」"
     observable_effect: "点「确定」内容不动；点「取消」反而清空内容并显示绿色「已清空」toast"
     gui_observability: STRONG
-    verification: PENDING_RETEST
+    verification: CONFIRMED
+    moss_v2_bug_id: [BUG-004, BUG-006]
+    notes: "Moss 拆成两个 bug：BUG-004(确定不清空) + BUG-006(取消反而清空)，实为同一 !confirm() 反转"
     replaces: "原 B3（字体映射错位）— GUI 弱可观察，已替换"
 
   - id: B4
@@ -50,7 +54,8 @@ bugs:
     observable_effect: "开关状态改变但页面主题颜色不跟随切换"
     gui_observability: STRONG
     verification: CONFIRMED
-    prior_moss_bug_id: BUG-002
+    moss_v1_bug_id: BUG-002
+    moss_v2_bug_id: BUG-005
 
   - id: B5
     failure_type: UNMATCHED_OUTCOME
@@ -61,15 +66,16 @@ bugs:
     observable_effect: "刷新后标题栏显示正文内容，正文区显示标题文字"
     gui_observability: STRONG
     verification: CONFIRMED
-    prior_moss_bug_id: BUG-004
+    moss_v1_bug_id: BUG-001
+    moss_v2_bug_id: BUG-001
 
 summary:
   total_bugs: 5
   gui_strong: 5
   gui_weak: 0
   non_gui: 0
-  confirmed: 3  # B1, B4, B5
-  pending_retest: 2  # B2, B3
+  confirmed: 5  # B1, B2, B3, B4, B5 — all verified by Moss v2
+  pending_retest: 0
   failure_type_distribution:
     UNMATCHED_OUTCOME: 2  # B3, B5
     UI_MALFUNCTION: 1     # B4
