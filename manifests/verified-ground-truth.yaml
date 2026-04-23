@@ -1,0 +1,82 @@
+app_name: "VLA-NTP 在线记事本"
+golden_repo: "https://github.com/labradorsedsota/online-notepad"
+golden_url: "https://labradorsedsota.github.io/online-notepad/"
+singer_repo: "https://github.com/labradorsedsota/online-notepad-singer"
+singer_url: "https://labradorsedsota.github.io/online-notepad-singer/"
+verification_date: "2026-04-23"
+verified_by: "智子 (Layer 2)"
+golden_test_result: "22/22 PASS"
+singer_test_result: "5/5 bugs detected by Moss"
+
+bugs:
+  - id: B1
+    failure_type: VISUAL_DEFECT
+    description: "笔记标题输入框文字不可见（文字颜色与背景色相同）"
+    root_cause: "CSS 中 #noteTitle 的 color 从 var(--text) 改为 var(--bg)，导致文字与背景同色"
+    diff_lines: 1
+    trigger_path: "打开应用 → 点击标题输入框 → 输入任意文字 → 文字不可见"
+    observable_effect: "标题输入框中输入的文字与背景融为一体，视觉上看不到任何输入内容"
+    golden_result: PASS
+    singer_result: FAIL
+    verification: CONFIRMED
+    moss_bug_id: BUG-001
+
+  - id: B2
+    failure_type: UNEXPECTED_EXCEPTION
+    description: "导出文件名丢失中文字符（sanitizeFilename 只保留 ASCII）"
+    root_cause: "sanitizeFilename 函数从 replace 非法字符改为 match 仅 [a-zA-Z0-9_-]，中文字符全部丢失；纯中文标题时 match 返回 null 导致 crash"
+    diff_lines: 1
+    trigger_path: "输入中文标题 → 点击导出 → 文件名丢失中文/crash"
+    observable_effect: "导出的文件名中中文字符全部消失，仅剩 ASCII 字符；纯中文标题时页面报错"
+    golden_result: PASS
+    singer_result: FAIL
+    verification: CONFIRMED
+    moss_bug_id: BUG-005
+    note: "非 GUI 可观察 — Moss 通过源码审计发现，非 GUI 操作触发"
+
+  - id: B3
+    failure_type: UNMATCHED_OUTCOME
+    description: "字体切换映射错乱（mono→serif, serif→sans, sans→mono 循环错位）"
+    root_cause: "setFont 函数中 mono/serif/sans 三个键的值循环错位"
+    diff_lines: 3
+    trigger_path: "点击字体切换按钮 → 选择等宽字体 → 实际显示衬线字体"
+    observable_effect: "选择的字体与实际渲染字体不匹配，三种字体全部错位"
+    golden_result: PASS
+    singer_result: FAIL
+    verification: CONFIRMED
+    moss_bug_id: BUG-003
+
+  - id: B4
+    failure_type: UI_MALFUNCTION
+    description: "暗色模式开关失效（toggle 不切换主题）"
+    root_cause: "setAttribute('data-theme','dark') 和 removeAttribute('data-theme') 两行被注释掉，toggle 只写 localStorage 不改 DOM"
+    diff_lines: 2
+    trigger_path: "点击暗色模式开关 → 主题不变化"
+    observable_effect: "开关状态改变但页面主题颜色不跟随切换，始终保持原主题"
+    golden_result: PASS
+    singer_result: FAIL
+    verification: CONFIRMED
+    moss_bug_id: BUG-002
+
+  - id: B5
+    failure_type: UNMATCHED_OUTCOME
+    description: "保存后标题与内容互换（localStorage 键值写反）"
+    root_cause: "localStorage.setItem(KEY_TITLE, content) 和 setItem(KEY_CONTENT, title) 键值对调"
+    diff_lines: 2
+    trigger_path: "输入标题和内容 → 点击保存 → 刷新页面 → 标题显示为之前的内容，内容显示为之前的标题"
+    observable_effect: "刷新后标题栏显示正文内容，正文区显示标题文字，数据互换"
+    golden_result: PASS
+    singer_result: FAIL
+    verification: CONFIRMED
+    moss_bug_id: BUG-004
+
+summary:
+  total_bugs: 5
+  confirmed: 5
+  failed_verification: 0
+  failure_type_distribution:
+    UNMATCHED_OUTCOME: 2  # B3, B5 (~40%)
+    UI_MALFUNCTION: 1     # B4 (~20%)
+    VISUAL_DEFECT: 1      # B1 (~20%)
+    UNEXPECTED_EXCEPTION: 1  # B2 (~20%)
+  non_gui_observable: 1   # B2 — 标记为源码审计发现
