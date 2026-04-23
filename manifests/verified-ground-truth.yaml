@@ -45,6 +45,8 @@ bugs:
     singer_result: FAIL
     verification: CONFIRMED
     moss_bug_id: BUG-003
+    gui_observability: WEAK
+    note: "GUI 弱可观察 — mano-cua 需精确区分字体特征（mono/serif/sans），截图判定难度高（品鉴者：廖雨亭）"
 
   - id: B4
     failure_type: UI_MALFUNCTION
@@ -79,4 +81,6 @@ summary:
     UI_MALFUNCTION: 1     # B4 (~20%)
     VISUAL_DEFECT: 1      # B1 (~20%)
     UNEXPECTED_EXCEPTION: 1  # B2 (~20%)
-  non_gui_observable: 1   # B2 — 标记为源码审计发现
+  non_gui_observable: 1   # B2 — 仅源码审计可发现，需访问文件系统
+  weak_gui_observable: 1  # B3 — 需精确区分字体特征，mano-cua 难判
+  strong_gui_observable: 3  # B1, B4, B5 — 截图即可判定异常
