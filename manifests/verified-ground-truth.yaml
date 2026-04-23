@@ -5,82 +5,73 @@ singer_repo: "https://github.com/labradorsedsota/online-notepad-singer"
 singer_url: "https://labradorsedsota.github.io/online-notepad-singer/"
 verification_date: "2026-04-23"
 verified_by: "智子 (Layer 2)"
-golden_test_result: "22/22 PASS"
-singer_test_result: "5/5 bugs detected by Moss"
+status: "PENDING_RETEST — B2'/B3' 已注入，等待 Moss 重新测试"
 
 bugs:
   - id: B1
     failure_type: VISUAL_DEFECT
     description: "笔记标题输入框文字不可见（文字颜色与背景色相同）"
-    root_cause: "CSS 中 #noteTitle 的 color 从 var(--text) 改为 var(--bg)，导致文字与背景同色"
+    root_cause: "CSS 中 #noteTitle 的 color 从 var(--text) 改为 var(--bg)"
     diff_lines: 1
-    trigger_path: "打开应用 → 点击标题输入框 → 输入任意文字 → 文字不可见"
+    trigger_path: "打开应用 → 点击标题输入框 → 输入任意文字"
     observable_effect: "标题输入框中输入的文字与背景融为一体，视觉上看不到任何输入内容"
-    golden_result: PASS
-    singer_result: FAIL
+    gui_observability: STRONG
     verification: CONFIRMED
-    moss_bug_id: BUG-001
+    prior_moss_bug_id: BUG-001
 
   - id: B2
     failure_type: UNEXPECTED_EXCEPTION
-    description: "导出文件名丢失中文字符（sanitizeFilename 只保留 ASCII）"
-    root_cause: "sanitizeFilename 函数从 replace 非法字符改为 match 仅 [a-zA-Z0-9_-]，中文字符全部丢失；纯中文标题时 match 返回 null 导致 crash"
+    description: "导出功能始终失败（downloadFile 内部 TypeError）"
+    root_cause: "downloadFile 中 document.createElement('a') 替换为 null，null.href 抛 TypeError，被 catch 捕获"
     diff_lines: 1
-    trigger_path: "输入中文标题 → 点击导出 → 文件名丢失中文/crash"
-    observable_effect: "导出的文件名中中文字符全部消失，仅剩 ASCII 字符；纯中文标题时页面报错"
-    golden_result: PASS
-    singer_result: FAIL
-    verification: CONFIRMED
-    moss_bug_id: BUG-005
-    note: "非 GUI 可观察 — Moss 通过源码审计发现，非 GUI 操作触发"
+    trigger_path: "输入内容 → 点击导出 → 选择格式 → 点击确认导出"
+    observable_effect: "页面弹出红色「导出失败，请重试」toast，任何格式导出均失败"
+    gui_observability: STRONG
+    verification: PENDING_RETEST
+    replaces: "原 B2（sanitizeFilename 丢中文）— 非 GUI 可观察，已替换"
 
   - id: B3
     failure_type: UNMATCHED_OUTCOME
-    description: "字体切换映射错乱（mono→serif, serif→sans, sans→mono 循环错位）"
-    root_cause: "setFont 函数中 mono/serif/sans 三个键的值循环错位"
-    diff_lines: 3
-    trigger_path: "点击字体切换按钮 → 选择等宽字体 → 实际显示衬线字体"
-    observable_effect: "选择的字体与实际渲染字体不匹配，三种字体全部错位"
-    golden_result: PASS
-    singer_result: FAIL
-    verification: CONFIRMED
-    moss_bug_id: BUG-003
-    gui_observability: WEAK
-    note: "GUI 弱可观察 — mano-cua 需精确区分字体特征（mono/serif/sans），截图判定难度高（品鉴者：廖雨亭）"
+    description: "清空确认逻辑反转（确定不清空，取消反而清空）"
+    root_cause: "if (confirm(...)) 改为 if (!confirm(...))，逻辑取反"
+    diff_lines: 1
+    trigger_path: "输入内容 → 点击清空 → 弹出确认框 → 点击「确定」"
+    observable_effect: "点「确定」内容不动；点「取消」反而清空内容并显示绿色「已清空」toast"
+    gui_observability: STRONG
+    verification: PENDING_RETEST
+    replaces: "原 B3（字体映射错位）— GUI 弱可观察，已替换"
 
   - id: B4
     failure_type: UI_MALFUNCTION
     description: "暗色模式开关失效（toggle 不切换主题）"
-    root_cause: "setAttribute('data-theme','dark') 和 removeAttribute('data-theme') 两行被注释掉，toggle 只写 localStorage 不改 DOM"
+    root_cause: "setAttribute('data-theme','dark') 和 removeAttribute('data-theme') 两行被注释掉"
     diff_lines: 2
-    trigger_path: "点击暗色模式开关 → 主题不变化"
-    observable_effect: "开关状态改变但页面主题颜色不跟随切换，始终保持原主题"
-    golden_result: PASS
-    singer_result: FAIL
+    trigger_path: "点击暗色模式开关"
+    observable_effect: "开关状态改变但页面主题颜色不跟随切换"
+    gui_observability: STRONG
     verification: CONFIRMED
-    moss_bug_id: BUG-002
+    prior_moss_bug_id: BUG-002
 
   - id: B5
     failure_type: UNMATCHED_OUTCOME
     description: "保存后标题与内容互换（localStorage 键值写反）"
     root_cause: "localStorage.setItem(KEY_TITLE, content) 和 setItem(KEY_CONTENT, title) 键值对调"
     diff_lines: 2
-    trigger_path: "输入标题和内容 → 点击保存 → 刷新页面 → 标题显示为之前的内容，内容显示为之前的标题"
-    observable_effect: "刷新后标题栏显示正文内容，正文区显示标题文字，数据互换"
-    golden_result: PASS
-    singer_result: FAIL
+    trigger_path: "输入标题和内容 → 点击保存 → 刷新页面"
+    observable_effect: "刷新后标题栏显示正文内容，正文区显示标题文字"
+    gui_observability: STRONG
     verification: CONFIRMED
-    moss_bug_id: BUG-004
+    prior_moss_bug_id: BUG-004
 
 summary:
   total_bugs: 5
-  confirmed: 5
-  failed_verification: 0
+  gui_strong: 5
+  gui_weak: 0
+  non_gui: 0
+  confirmed: 3  # B1, B4, B5
+  pending_retest: 2  # B2, B3
   failure_type_distribution:
-    UNMATCHED_OUTCOME: 2  # B3, B5 (~40%)
-    UI_MALFUNCTION: 1     # B4 (~20%)
-    VISUAL_DEFECT: 1      # B1 (~20%)
-    UNEXPECTED_EXCEPTION: 1  # B2 (~20%)
-  non_gui_observable: 1   # B2 — 仅源码审计可发现，需访问文件系统
-  weak_gui_observable: 1  # B3 — 需精确区分字体特征，mano-cua 难判
-  strong_gui_observable: 3  # B1, B4, B5 — 截图即可判定异常
+    UNMATCHED_OUTCOME: 2  # B3, B5
+    UI_MALFUNCTION: 1     # B4
+    VISUAL_DEFECT: 1      # B1
+    UNEXPECTED_EXCEPTION: 1  # B2
